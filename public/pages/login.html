@@ -1,0 +1,147 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Login — Pluto Carbon Footprint Tracker</title>
+  <link rel="stylesheet" href="/css/style.css" />
+  <style>
+    body { background: var(--bg); display: flex; align-items: center; justify-content: center; min-height: 100vh; }
+
+    .auth-wrapper {
+      width: 100%; max-width: 420px; padding: 1.5rem;
+    }
+
+    .auth-logo {
+      text-align: center;
+      margin-bottom: 2rem;
+    }
+    .auth-logo svg { width: 52px; height: 52px; margin-bottom: 0.75rem; }
+    .auth-logo h1 {
+      font-family: 'Space Grotesk', sans-serif;
+      font-size: 1.5rem;
+      font-weight: 700;
+      color: var(--green-800);
+    }
+    .auth-logo p { font-size: 0.875rem; color: var(--text-muted); margin-top: 0.25rem; }
+
+    .auth-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-lg);
+      padding: 2rem;
+      box-shadow: var(--shadow-lg);
+    }
+
+    .auth-footer {
+      text-align: center;
+      margin-top: 1.25rem;
+      font-size: 0.85rem;
+      color: var(--text-muted);
+    }
+    .auth-footer a { color: var(--green-600); text-decoration: none; font-weight: 600; }
+    .auth-footer a:hover { text-decoration: underline; }
+
+    .divider {
+      display: flex; align-items: center; gap: 0.75rem;
+      margin: 1.25rem 0; color: var(--text-muted); font-size: 0.8rem;
+    }
+    .divider::before, .divider::after {
+      content: ''; flex: 1; height: 1px; background: var(--border);
+    }
+
+    .password-wrapper { position: relative; }
+    .password-toggle {
+      position: absolute; right: 0.75rem; top: 50%; transform: translateY(-50%);
+      background: none; border: none; cursor: pointer; color: var(--text-muted); padding: 0;
+    }
+    .password-toggle:hover { color: var(--green-600); }
+  </style>
+</head>
+<body>
+  <div class="auth-wrapper">
+    <div class="auth-logo">
+      <!-- Pluto leaf logo -->
+      <svg viewBox="0 0 52 52" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <ellipse cx="26" cy="26" rx="26" ry="26" fill="#e8f5ea"/>
+        <path d="M26 40c0 0-14-8-14-18a14 14 0 0 1 28 0c0 10-14 18-14 18z" fill="#38a745"/>
+        <path d="M26 40V20" stroke="#1e4d24" stroke-width="2" stroke-linecap="round"/>
+        <path d="M26 28c3-4 8-5 10-4" stroke="#1e4d24" stroke-width="1.5" stroke-linecap="round"/>
+        <path d="M26 34c-3-4-8-5-10-4" stroke="#1e4d24" stroke-width="1.5" stroke-linecap="round"/>
+      </svg>
+      <h1>Pluto CFT</h1>
+      <p>Carbon Footprint Tracker</p>
+    </div>
+
+    <div class="auth-card">
+      <h2 style="font-family:'Space Grotesk',sans-serif; font-size:1.2rem; font-weight:700; margin-bottom:1.5rem; color:var(--green-800);">Welcome back</h2>
+
+      <div id="alert" class="alert alert-error"></div>
+
+      <form id="loginForm" novalidate>
+        <div class="form-group">
+          <label class="form-label" for="username">Username or Email</label>
+          <input class="form-control" type="text" id="username" name="username" placeholder="Enter your username or email" required autocomplete="username" />
+        </div>
+
+        <div class="form-group">
+          <label class="form-label" for="password">Password</label>
+          <div class="password-wrapper">
+            <input class="form-control" type="password" id="password" name="password" placeholder="Enter your password" required autocomplete="current-password" />
+            <button type="button" class="password-toggle" onclick="togglePassword('password')">
+              <svg id="eye-login" width="18" height="18" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/></svg>
+            </button>
+          </div>
+        </div>
+
+        <button type="submit" class="btn btn-primary btn-full" id="submitBtn">
+          Sign In
+        </button>
+      </form>
+
+      <div class="divider">or</div>
+
+      <div class="auth-footer" style="margin-top:0;">
+        Don't have an account? <a href="/auth/signup">Create account</a>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    function togglePassword(fieldId) {
+      const field = document.getElementById(fieldId);
+      field.type = field.type === 'password' ? 'text' : 'password';
+    }
+
+    function showAlert(msg) {
+      const el = document.getElementById('alert');
+      el.textContent = msg;
+      el.classList.add('show');
+    }
+
+    document.getElementById('loginForm').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const btn = document.getElementById('submitBtn');
+      btn.innerHTML = '<span class="spinner"></span> Signing in…';
+      btn.disabled = true;
+
+      const res  = await fetch('/auth/login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          username: document.getElementById('username').value.trim(),
+          password: document.getElementById('password').value,
+        }),
+      }).then(r => r.json());
+
+      if (res.success) {
+        window.location.href = res.redirect;
+      } else {
+        showAlert(res.message);
+        btn.innerHTML = 'Sign In';
+        btn.disabled  = false;
+      }
+    });
+  </script>
+</body>
+</html>

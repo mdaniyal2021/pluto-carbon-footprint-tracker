@@ -1,0 +1,18 @@
+{
+  "name": "pluto-cft",
+  "version": "1.0.0",
+  "description": "Carbon footprint tracker: log activities, see CO2 emissions on a dashboard",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "keywords": ["carbon-footprint", "express", "nodejs", "nedb"],
+  "author": "",
+  "license": "MIT",
+  "dependencies": {
+    "bcryptjs": "^3.0.3",
+    "express": "^5.2.1",
+    "express-session": "^1.19.0",
+    "nedb-promises": "^6.2.3"
+  }
+}

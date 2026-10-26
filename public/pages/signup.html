@@ -1,0 +1,174 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Create Account — Pluto Carbon Footprint Tracker</title>
+  <link rel="stylesheet" href="/css/style.css" />
+  <style>
+    body { background: var(--bg); display: flex; align-items: center; justify-content: center; min-height: 100vh; padding: 2rem 1rem; }
+
+    .auth-wrapper { width: 100%; max-width: 440px; }
+
+    .auth-logo { text-align: center; margin-bottom: 1.75rem; }
+    .auth-logo svg { width: 48px; height: 48px; margin-bottom: 0.6rem; }
+    .auth-logo h1 { font-family: 'Space Grotesk', sans-serif; font-size: 1.4rem; font-weight: 700; color: var(--green-800); }
+    .auth-logo p  { font-size: 0.875rem; color: var(--text-muted); margin-top: 0.2rem; }
+
+    .auth-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-lg);
+      padding: 2rem;
+      box-shadow: var(--shadow-lg);
+    }
+
+    .auth-footer {
+      text-align: center; margin-top: 1.25rem;
+      font-size: 0.85rem; color: var(--text-muted);
+    }
+    .auth-footer a { color: var(--green-600); text-decoration: none; font-weight: 600; }
+    .auth-footer a:hover { text-decoration: underline; }
+
+    .password-wrapper { position: relative; }
+    .password-toggle {
+      position: absolute; right: 0.75rem; top: 50%; transform: translateY(-50%);
+      background: none; border: none; cursor: pointer; color: var(--text-muted); padding: 0;
+    }
+    .password-toggle:hover { color: var(--green-600); }
+
+    .strength-bar {
+      height: 4px; border-radius: 4px; background: var(--border);
+      margin-top: 0.4rem; overflow: hidden;
+    }
+    .strength-fill {
+      height: 100%; width: 0; border-radius: 4px;
+      transition: width 0.3s, background 0.3s;
+    }
+    .strength-text { font-size: 0.75rem; color: var(--text-muted); margin-top: 0.2rem; }
+  </style>
+</head>
+<body>
+  <div class="auth-wrapper">
+    <div class="auth-logo">
+      <svg viewBox="0 0 52 52" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <ellipse cx="26" cy="26" rx="26" ry="26" fill="#e8f5ea"/>
+        <path d="M26 40c0 0-14-8-14-18a14 14 0 0 1 28 0c0 10-14 18-14 18z" fill="#38a745"/>
+        <path d="M26 40V20" stroke="#1e4d24" stroke-width="2" stroke-linecap="round"/>
+        <path d="M26 28c3-4 8-5 10-4" stroke="#1e4d24" stroke-width="1.5" stroke-linecap="round"/>
+        <path d="M26 34c-3-4-8-5-10-4" stroke="#1e4d24" stroke-width="1.5" stroke-linecap="round"/>
+      </svg>
+      <h1>Pluto CFT</h1>
+      <p>Start your eco journey today</p>
+    </div>
+
+    <div class="auth-card">
+      <h2 style="font-family:'Space Grotesk',sans-serif; font-size:1.2rem; font-weight:700; margin-bottom:1.5rem; color:var(--green-800);">Create your account</h2>
+
+      <div id="alert" class="alert alert-error"></div>
+      <div id="successAlert" class="alert alert-success"></div>
+
+      <form id="signupForm" novalidate>
+        <div class="form-group">
+          <label class="form-label" for="username">Username</label>
+          <input class="form-control" type="text" id="username" name="username" placeholder="e.g. Omar_Hassan" required autocomplete="username" />
+        </div>
+
+        <div class="form-group">
+          <label class="form-label" for="email">Email Address</label>
+          <input class="form-control" type="email" id="email" name="email" placeholder="you@example.com" required autocomplete="email" />
+        </div>
+
+        <div class="form-group">
+          <label class="form-label" for="password">Password</label>
+          <div class="password-wrapper">
+            <input class="form-control" type="password" id="password" name="password" placeholder="At least 6 characters" required autocomplete="new-password" oninput="checkStrength(this.value)" />
+            <button type="button" class="password-toggle" onclick="togglePassword('password')">
+              <svg width="18" height="18" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/></svg>
+            </button>
+          </div>
+          <div class="strength-bar"><div class="strength-fill" id="strengthFill"></div></div>
+          <p class="strength-text" id="strengthText"></p>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label" for="confirmPassword">Confirm Password</label>
+          <div class="password-wrapper">
+            <input class="form-control" type="password" id="confirmPassword" name="confirmPassword" placeholder="Repeat your password" required autocomplete="new-password" />
+            <button type="button" class="password-toggle" onclick="togglePassword('confirmPassword')">
+              <svg width="18" height="18" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/></svg>
+            </button>
+          </div>
+        </div>
+
+        <button type="submit" class="btn btn-primary btn-full" id="submitBtn">Create Account</button>
+      </form>
+
+      <div class="auth-footer">
+        Already have an account? <a href="/auth/login">Sign in</a>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    function togglePassword(id) {
+      const f = document.getElementById(id);
+      f.type = f.type === 'password' ? 'text' : 'password';
+    }
+
+    function checkStrength(val) {
+      const fill = document.getElementById('strengthFill');
+      const text = document.getElementById('strengthText');
+      let score = 0;
+      if (val.length >= 6)  score++;
+      if (val.length >= 10) score++;
+      if (/[A-Z]/.test(val)) score++;
+      if (/[0-9]/.test(val)) score++;
+      if (/[^A-Za-z0-9]/.test(val)) score++;
+
+      const levels = [
+        { pct: '0%',   color: '',             label: '' },
+        { pct: '25%',  color: '#e74c3c',      label: 'Weak' },
+        { pct: '50%',  color: '#e67e22',      label: 'Fair' },
+        { pct: '75%',  color: '#f1c40f',      label: 'Good' },
+        { pct: '90%',  color: '#2ecc71',      label: 'Strong' },
+        { pct: '100%', color: 'var(--green-600)', label: 'Very strong' },
+      ];
+      const lvl = levels[score] || levels[0];
+      fill.style.width      = lvl.pct;
+      fill.style.background = lvl.color;
+      text.textContent      = lvl.label;
+    }
+
+    document.getElementById('signupForm').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      document.getElementById('alert').classList.remove('show');
+
+      const btn = document.getElementById('submitBtn');
+      btn.innerHTML = '<span class="spinner"></span> Creating account…';
+      btn.disabled  = true;
+
+      const res = await fetch('/auth/signup', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          username:        document.getElementById('username').value.trim(),
+          email:           document.getElementById('email').value.trim(),
+          password:        document.getElementById('password').value,
+          confirmPassword: document.getElementById('confirmPassword').value,
+        }),
+      }).then(r => r.json());
+
+      if (res.success) {
+        window.location.href = res.redirect;
+      } else {
+        const alert = document.getElementById('alert');
+        alert.textContent = res.message;
+        alert.classList.add('show');
+        btn.innerHTML = 'Create Account';
+        btn.disabled  = false;
+      }
+    });
+  </script>
+</body>
+</html>

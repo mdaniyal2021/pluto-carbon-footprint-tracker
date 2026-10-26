@@ -1,0 +1,311 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Emission Log — Pluto Carbon Footprint Tracker</title>
+  <link rel="stylesheet" href="/css/style.css" />
+  <style>
+    .log-grid { display: grid; grid-template-columns: 340px 1fr; gap: 1.5rem; align-items: start; }
+    @media (max-width: 780px) { .log-grid { grid-template-columns: 1fr; } }
+
+    .summary-banner {
+      background: linear-gradient(135deg, var(--green-700), var(--green-500));
+      color: #fff; border-radius: var(--radius); padding: 1.25rem 1.5rem;
+      margin-bottom: 1.25rem; text-align: center;
+    }
+    .summary-banner .big { font-size: 2rem; font-weight: 800; font-family: 'Space Grotesk', sans-serif; }
+    .summary-banner .sub { font-size: 0.8rem; opacity: 0.85; margin-top: 0.2rem; }
+
+    .activity-options { display: none; }
+    .activity-options.show { display: block; }
+
+    .co2-preview {
+      background: var(--green-50); border: 1px solid var(--green-300);
+      border-radius: 9px; padding: 0.75rem 1rem; font-size: 0.9rem;
+      font-weight: 600; color: var(--green-800); margin: 0.75rem 0;
+      display: none;
+    }
+    .co2-preview.show { display: block; }
+
+    .date-row { display: flex; gap: 0.5rem; align-items: center; margin-bottom: 1rem; }
+    .date-row input { flex: 1; }
+
+    .entry-category { text-transform: capitalize; }
+  </style>
+</head>
+<body>
+
+  <!-- Navigation -->
+  <nav class="navbar">
+    <a class="navbar-brand" href="/dashboard">
+      <svg viewBox="0 0 32 32" fill="none"><ellipse cx="16" cy="16" rx="16" ry="16" fill="#e8f5ea"/><path d="M16 26c0 0-8-5-8-11a8 8 0 0 1 16 0c0 6-8 11-8 11z" fill="#38a745"/><path d="M16 26V14" stroke="#1e4d24" stroke-width="1.5" stroke-linecap="round"/></svg>
+      PLUTO
+    </a>
+    <ul class="navbar-nav">
+      <li><a href="/dashboard">Home</a></li>
+      <li><a href="/emissions/log" class="active">Emission Log</a></li>
+      <li><a href="/dashboard/tips">Tips</a></li>
+    </ul>
+    <div class="navbar-right">
+      <a href="/auth/logout" class="btn-logout">Logout</a>
+    </div>
+  </nav>
+
+  <div class="page-wrapper">
+    <div class="page-header">
+      <h1>Emission Log</h1>
+      <p>Record your daily activities and track their carbon impact.</p>
+    </div>
+
+    <div class="log-grid">
+
+      <!-- Add Activity Form -->
+      <div class="card">
+        <div class="card-title">Add Activity</div>
+
+        <div id="formAlert" class="alert alert-error" style="margin-top:0.75rem;"></div>
+        <div id="formSuccess" class="alert alert-success" style="margin-top:0.75rem;"></div>
+
+        <form id="emissionForm" novalidate style="margin-top:1rem;">
+
+          <div class="form-group">
+            <label class="form-label" for="date">Date</label>
+            <input class="form-control" type="date" id="date" required />
+          </div>
+
+          <div class="form-group">
+            <label class="form-label" for="category">Category</label>
+            <select class="form-control" id="category" required onchange="updateActivityTypes()">
+              <option value="">— Select category —</option>
+              <option value="travel">Travel</option>
+              <option value="energy">Energy</option>
+              <option value="general">General / Food</option>
+            </select>
+          </div>
+
+          <div class="activity-options" id="activityOptions">
+            <div class="form-group">
+              <label class="form-label" for="activityType">Activity Type</label>
+              <select class="form-control" id="activityType" required onchange="updatePreview()">
+                <option value="">— Select activity —</option>
+              </select>
+            </div>
+
+            <div class="form-group">
+              <label class="form-label" for="quantity" id="quantityLabel">Quantity</label>
+              <input class="form-control" type="number" id="quantity" min="0" step="0.1" placeholder="0" oninput="updatePreview()" />
+            </div>
+
+            <div class="co2-preview" id="co2Preview">
+              Estimated CO₂: <span id="co2Value">0</span> kg
+            </div>
+
+            <div class="form-group">
+              <label class="form-label" for="notes">Notes (optional)</label>
+              <input class="form-control" type="text" id="notes" placeholder="e.g. Morning commute" />
+            </div>
+          </div>
+
+          <button type="submit" class="btn btn-primary btn-full" id="addBtn">Add Activity</button>
+        </form>
+      </div>
+
+      <!-- Entries List -->
+      <div>
+        <div class="summary-banner" id="summaryBanner">
+          <div class="big" id="summaryTotal">0 kg</div>
+          <div class="sub">Total CO₂ — <span id="summaryDate">today</span></div>
+        </div>
+
+        <div class="card">
+          <div class="card-title" style="display:flex;justify-content:space-between;align-items:center;">
+            <span>Logged Entries</span>
+            <div style="display:flex;align-items:center;gap:0.5rem;">
+              <input type="date" id="filterDate" class="form-control" style="padding:0.3rem 0.6rem;font-size:0.8rem;width:auto;" onchange="loadEntries()" />
+              <button class="btn btn-secondary btn-sm" onclick="clearFilter()">All</button>
+            </div>
+          </div>
+
+          <div id="entriesContainer" style="margin-top:1rem;">
+            <div class="empty-state">
+              <svg width="40" height="40" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/></svg>
+              <p>No activities logged yet. Add your first entry!</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const ACTIVITY_MAP = {
+      travel: [
+        { value: 'car_petrol', label: 'Car (Petrol)',    unit: 'km' },
+        { value: 'car_diesel', label: 'Car (Diesel)',    unit: 'km' },
+        { value: 'bus',        label: 'Bus',             unit: 'km' },
+        { value: 'train',      label: 'Train',           unit: 'km' },
+        { value: 'flight_short', label: 'Short Flight',  unit: 'km' },
+      ],
+      energy: [
+        { value: 'electricity', label: 'Electricity',   unit: 'kWh' },
+        { value: 'gas_heating', label: 'Gas Heating',   unit: 'kWh' },
+      ],
+      general: [
+        { value: 'food_beef',       label: 'Beef',       unit: 'kg' },
+        { value: 'food_chicken',    label: 'Chicken',    unit: 'kg' },
+        { value: 'food_vegetables', label: 'Vegetables', unit: 'kg' },
+      ],
+    };
+
+    let factors = {};
+
+    async function init() {
+      // Set today's date
+      const today = new Date().toISOString().split('T')[0];
+      document.getElementById('date').value    = today;
+      document.getElementById('filterDate').value = today;
+
+      // Load factors
+      const r = await fetch('/emissions/api/factors').then(x => x.json());
+      if (r.success) factors = r.factors;
+
+      loadEntries();
+    }
+
+    function updateActivityTypes() {
+      const cat    = document.getElementById('category').value;
+      const opts   = document.getElementById('activityOptions');
+      const select = document.getElementById('activityType');
+
+      if (!cat) { opts.classList.remove('show'); return; }
+
+      select.innerHTML = '<option value="">— Select activity —</option>';
+      (ACTIVITY_MAP[cat] || []).forEach(a => {
+        select.innerHTML += `<option value="${a.value}" data-unit="${a.unit}">${a.label} (per ${a.unit})</option>`;
+      });
+      opts.classList.add('show');
+      document.getElementById('co2Preview').classList.remove('show');
+      document.getElementById('quantity').value = '';
+    }
+
+    function updatePreview() {
+      const actEl    = document.getElementById('activityType');
+      const qtyEl    = document.getElementById('quantity');
+      const preview  = document.getElementById('co2Preview');
+
+      const actVal   = actEl.value;
+      const qty      = parseFloat(qtyEl.value);
+
+      if (!actVal || isNaN(qty) || qty <= 0) {
+        preview.classList.remove('show'); return;
+      }
+
+      const selectedOpt = actEl.options[actEl.selectedIndex];
+      const unit  = selectedOpt.dataset.unit;
+      document.getElementById('quantityLabel').textContent = `Quantity (${unit})`;
+
+      const co2 = ((factors[actVal] || 0) * qty).toFixed(3);
+      document.getElementById('co2Value').textContent = co2;
+      preview.classList.add('show');
+    }
+
+    async function loadEntries() {
+      const dateFilter = document.getElementById('filterDate').value;
+      const url = '/emissions/api/list' + (dateFilter ? `?date=${dateFilter}` : '');
+      const res = await fetch(url).then(r => r.json());
+
+      document.getElementById('summaryDate').textContent = dateFilter || 'all dates';
+      document.getElementById('summaryTotal').textContent = (res.total || 0) + ' kg';
+
+      const container = document.getElementById('entriesContainer');
+
+      if (!res.entries || res.entries.length === 0) {
+        container.innerHTML = `<div class="empty-state">
+          <svg width="40" height="40" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/></svg>
+          <p>No activities found for this date.</p></div>`;
+        return;
+      }
+
+      container.innerHTML = `<div class="table-wrap">
+        <table>
+          <thead><tr>
+            <th>Date</th><th>Category</th><th>Activity</th><th>Quantity</th><th>CO₂ (kg)</th><th></th>
+          </tr></thead>
+          <tbody id="entriesBody"></tbody>
+        </table>
+      </div>`;
+
+      const body = document.getElementById('entriesBody');
+      res.entries.forEach(e => {
+        const badgeClass = `badge-${e.category}`;
+        body.innerHTML += `
+          <tr>
+            <td>${e.date}</td>
+            <td><span class="badge ${badgeClass} entry-category">${e.category}</span></td>
+            <td>${e.activityType.replace(/_/g, ' ')}</td>
+            <td>${e.quantity} ${e.unit}</td>
+            <td><strong>${e.co2Kg}</strong></td>
+            <td>
+              <button class="btn btn-danger btn-sm" onclick="deleteEntry('${e._id}')">Delete</button>
+            </td>
+          </tr>`;
+      });
+    }
+
+    async function deleteEntry(id) {
+      if (!confirm('Remove this entry?')) return;
+      const res = await fetch(`/emissions/api/delete/${id}`, { method: 'DELETE' }).then(r => r.json());
+      if (res.success) loadEntries();
+    }
+
+    function clearFilter() {
+      document.getElementById('filterDate').value = '';
+      loadEntries();
+    }
+
+    document.getElementById('emissionForm').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      document.getElementById('formAlert').classList.remove('show');
+      document.getElementById('formSuccess').classList.remove('show');
+
+      const btn = document.getElementById('addBtn');
+      btn.innerHTML = '<span class="spinner"></span>';
+      btn.disabled  = true;
+
+      const res = await fetch('/emissions/api/add', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          category:     document.getElementById('category').value,
+          activityType: document.getElementById('activityType').value,
+          quantity:     document.getElementById('quantity').value,
+          unit:         document.getElementById('activityType').options[document.getElementById('activityType').selectedIndex]?.dataset?.unit || '',
+          date:         document.getElementById('date').value,
+          notes:        document.getElementById('notes').value,
+        }),
+      }).then(r => r.json());
+
+      if (res.success) {
+        const s = document.getElementById('formSuccess');
+        s.textContent = `Entry added — ${res.entry.co2Kg} kg CO₂ logged.`;
+        s.classList.add('show');
+        document.getElementById('emissionForm').reset();
+        document.getElementById('date').value = new Date().toISOString().split('T')[0];
+        document.getElementById('activityOptions').classList.remove('show');
+        document.getElementById('co2Preview').classList.remove('show');
+        loadEntries();
+      } else {
+        const a = document.getElementById('formAlert');
+        a.textContent = res.message;
+        a.classList.add('show');
+      }
+
+      btn.innerHTML = 'Add Activity';
+      btn.disabled  = false;
+    });
+
+    init();
+  </script>
+</body>
+</html>

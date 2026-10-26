@@ -1,0 +1,232 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Eco Tips — Pluto Carbon Footprint Tracker</title>
+  <link rel="stylesheet" href="/css/style.css" />
+  <style>
+    .section-heading {
+      font-family: 'Space Grotesk', sans-serif;
+      font-size: 1rem;
+      font-weight: 700;
+      color: var(--green-800);
+      margin: 1.75rem 0 0.75rem;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+    .section-heading::after {
+      content: '';
+      flex: 1;
+      height: 1px;
+      background: var(--border);
+    }
+
+    .tips-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+      gap: 1rem;
+    }
+
+    .tip-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 1.25rem;
+      cursor: pointer;
+      transition: all 0.2s;
+      box-shadow: var(--shadow);
+      display: flex;
+      flex-direction: column;
+      gap: 0.5rem;
+    }
+    .tip-card:hover {
+      border-color: var(--green-400);
+      transform: translateY(-2px);
+      box-shadow: var(--shadow-lg);
+    }
+    .tip-card.expanded { border-color: var(--green-500); background: var(--green-50); }
+
+    .tip-title {
+      font-weight: 700;
+      font-size: 0.9rem;
+      color: var(--green-800);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+    .tip-arrow { transition: transform 0.2s; color: var(--text-muted); }
+    .tip-card.expanded .tip-arrow { transform: rotate(90deg); color: var(--green-600); }
+
+    .tip-body {
+      font-size: 0.85rem;
+      color: var(--text-muted);
+      line-height: 1.6;
+      display: none;
+    }
+    .tip-card.expanded .tip-body { display: block; }
+
+    .tip-category {
+      font-size: 0.72rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      color: var(--green-600);
+    }
+
+    .faq-item {
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      overflow: hidden;
+      margin-bottom: 0.5rem;
+    }
+    .faq-question {
+      padding: 0.9rem 1.1rem;
+      cursor: pointer;
+      font-weight: 600;
+      font-size: 0.875rem;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      background: var(--surface);
+      transition: background 0.15s;
+    }
+    .faq-question:hover { background: var(--green-50); }
+    .faq-answer {
+      padding: 0 1.1rem;
+      max-height: 0;
+      overflow: hidden;
+      transition: max-height 0.3s ease, padding 0.3s;
+      font-size: 0.875rem;
+      color: var(--text-muted);
+      line-height: 1.65;
+    }
+    .faq-item.open .faq-answer {
+      max-height: 200px;
+      padding: 0.75rem 1.1rem 1rem;
+    }
+    .faq-icon { transition: transform 0.2s; font-size: 1rem; color: var(--text-muted); }
+    .faq-item.open .faq-icon { transform: rotate(45deg); color: var(--green-600); }
+  </style>
+</head>
+<body>
+
+  <!-- Navigation -->
+  <nav class="navbar">
+    <a class="navbar-brand" href="/dashboard">
+      <svg viewBox="0 0 32 32" fill="none"><ellipse cx="16" cy="16" rx="16" ry="16" fill="#e8f5ea"/><path d="M16 26c0 0-8-5-8-11a8 8 0 0 1 16 0c0 6-8 11-8 11z" fill="#38a745"/><path d="M16 26V14" stroke="#1e4d24" stroke-width="1.5" stroke-linecap="round"/></svg>
+      PLUTO
+    </a>
+    <ul class="navbar-nav">
+      <li><a href="/dashboard">Home</a></li>
+      <li><a href="/emissions/log">Emission Log</a></li>
+      <li><a href="/dashboard/tips" class="active">Tips</a></li>
+    </ul>
+    <div class="navbar-right">
+      <a href="/auth/logout" class="btn-logout">Logout</a>
+    </div>
+  </nav>
+
+  <div class="page-wrapper">
+    <div class="page-header">
+      <h1>Eco Tips</h1>
+      <p>Personalised and general advice to help reduce your carbon footprint.</p>
+    </div>
+
+    <!-- Personalised Tips -->
+    <div class="section-heading"><svg width="17" height="17" fill="none" viewBox="0 0 24 24" stroke="currentColor" style="color:var(--green-600);flex-shrink:0"><circle cx="12" cy="12" r="3" stroke-width="2"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 2v2m0 16v2M4.93 4.93l1.41 1.41m11.32 11.32 1.41 1.41M2 12h2m16 0h2M4.93 19.07l1.41-1.41M17.66 6.34l1.41-1.41"/></svg>Personalised Tips</div>
+    <div class="tips-grid" id="personalisedTips">
+      <div class="empty-state"><p>Loading…</p></div>
+    </div>
+
+    <!-- General Tips -->
+    <div class="section-heading"><svg width="17" height="17" fill="none" viewBox="0 0 24 24" stroke="currentColor" style="color:var(--green-600);flex-shrink:0"><circle cx="12" cy="12" r="10" stroke-width="2"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2 12h20M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10A15.3 15.3 0 0 1 8 12a15.3 15.3 0 0 1 4-10z"/></svg>General Tips</div>
+    <div class="tips-grid" id="generalTips">
+      <div class="empty-state"><p>Loading…</p></div>
+    </div>
+
+    <!-- FAQ -->
+    <div class="section-heading"><svg width="17" height="17" fill="none" viewBox="0 0 24 24" stroke="currentColor" style="color:var(--green-600);flex-shrink:0"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8.228 9c.549-1.165 2.03-2 3.772-2 2.21 0 4 1.343 4 3 0 1.4-1.278 2.575-3.006 2.907-.542.104-.994.54-.994 1.093m0 3h.01"/><circle cx="12" cy="12" r="10" stroke-width="2"/></svg>Frequently Asked Questions</div>
+    <div id="faqList">
+      <div class="faq-item">
+        <div class="faq-question" onclick="toggleFaq(this)">
+          Can I edit my logged entries? <span class="faq-icon">+</span>
+        </div>
+        <div class="faq-answer">
+          Yes — open the Emission Log page, find the entry you wish to remove, and click the Delete button. You can then re-add it with the correct values.
+        </div>
+      </div>
+      <div class="faq-item">
+        <div class="faq-question" onclick="toggleFaq(this)">
+          Do I need to log every day? <span class="faq-icon">+</span>
+        </div>
+        <div class="faq-answer">
+          No. Log activities whenever you like. Even occasional tracking gives you useful insights over time. The more consistent you are, the more accurate your trend data will be.
+        </div>
+      </div>
+      <div class="faq-item">
+        <div class="faq-question" onclick="toggleFaq(this)">
+          How is my carbon footprint calculated? <span class="faq-icon">+</span>
+        </div>
+        <div class="faq-answer">
+          Each activity type has a published emission factor (kg CO₂ per unit). For example, driving 1 km in a petrol car produces approximately 0.21 kg of CO₂. Your quantity is multiplied by that factor to produce the total.
+        </div>
+      </div>
+      <div class="faq-item">
+        <div class="faq-question" onclick="toggleFaq(this)">
+          Is my data secure? <span class="faq-icon">+</span>
+        </div>
+        <div class="faq-answer">
+          Passwords are hashed using bcrypt before storage and are never stored in plain text. All session data is managed server-side. The application complies with GDPR principles — your data is yours.
+        </div>
+      </div>
+      <div class="faq-item">
+        <div class="faq-question" onclick="toggleFaq(this)">
+          What is the daily CO₂ average per person? <span class="faq-icon">+</span>
+        </div>
+        <div class="faq-answer">
+          The global average is approximately 26 kg of CO₂ per person per day, though this varies widely by country and lifestyle. Pluto CFT helps you understand where you stand relative to this benchmark.
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    async function loadTips() {
+      const res = await fetch('/dashboard/tips/api/list').then(r => r.json());
+      if (!res.success) return;
+
+      renderTips('personalisedTips', res.personalised);
+      renderTips('generalTips',      res.general);
+    }
+
+    function renderTips(containerId, tips) {
+      const container = document.getElementById(containerId);
+      if (!tips || tips.length === 0) {
+        container.innerHTML = '<div class="empty-state"><p>No tips available.</p></div>';
+        return;
+      }
+      container.innerHTML = tips.map(t => `
+        <div class="tip-card" onclick="this.classList.toggle('expanded')">
+          <div class="tip-category">${t.category}</div>
+          <div class="tip-title">
+            ${t.title}
+            <svg class="tip-arrow" width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
+            </svg>
+          </div>
+          <div class="tip-body">${t.body}</div>
+        </div>
+      `).join('');
+    }
+
+    function toggleFaq(questionEl) {
+      const item = questionEl.parentElement;
+      item.classList.toggle('open');
+    }
+
+    loadTips();
+  </script>
+</body>
+</html>

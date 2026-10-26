@@ -1,0 +1,259 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Dashboard — Pluto Carbon Footprint Tracker</title>
+  <link rel="stylesheet" href="/css/style.css" />
+  <style>
+    .welcome-banner {
+      background: linear-gradient(135deg, var(--green-800) 0%, var(--green-600) 100%);
+      border-radius: var(--radius-lg);
+      padding: 1.75rem 2rem;
+      color: #fff;
+      margin-bottom: 1.75rem;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 1rem;
+    }
+    .welcome-banner h2 { font-family: 'Space Grotesk', sans-serif; font-size: 1.35rem; font-weight: 700; }
+    .welcome-banner p  { opacity: 0.85; font-size: 0.9rem; margin-top: 0.25rem; }
+    .welcome-badge {
+      background: rgba(255,255,255,0.18);
+      border: 1px solid rgba(255,255,255,0.3);
+      border-radius: 8px;
+      padding: 0.5rem 1rem;
+      font-size: 0.8rem;
+      font-weight: 600;
+    }
+
+    .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 1.25rem; margin-top: 1.25rem; }
+    @media (max-width: 680px) { .grid-2 { grid-template-columns: 1fr; } }
+
+    .insight-row {
+      display: flex; justify-content: space-between; align-items: center;
+      padding: 0.7rem 0;
+      border-bottom: 1px solid var(--border);
+    }
+    .insight-row:last-child { border-bottom: none; }
+    .insight-label { font-size: 0.85rem; font-weight: 600; color: var(--text); }
+    .insight-value { font-size: 0.85rem; color: var(--text-muted); }
+
+    .chart-container { height: 180px; position: relative; margin-top: 0.75rem; }
+    canvas { width: 100% !important; }
+
+    .profile-meta {
+      display: flex; flex-direction: column; gap: 0.5rem; margin-top: 0.75rem;
+    }
+    .profile-meta-row {
+      display: flex; align-items: center; gap: 0.5rem;
+      font-size: 0.875rem; color: var(--text-muted);
+    }
+    .profile-meta-row strong { color: var(--text); }
+
+    .quick-links {
+      display: grid; grid-template-columns: repeat(3, 1fr); gap: 0.75rem;
+      margin-top: 1.75rem;
+    }
+    .quick-link {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 1.25rem;
+      text-align: center;
+      text-decoration: none;
+      color: var(--text);
+      transition: all 0.2s;
+      box-shadow: var(--shadow);
+    }
+    .quick-link:hover { border-color: var(--green-400); transform: translateY(-2px); box-shadow: var(--shadow-lg); }
+    .quick-link svg  { margin-bottom: 0.5rem; color: var(--green-600); }
+    .quick-link span { display: block; font-size: 0.8rem; font-weight: 600; }
+    @media (max-width: 480px) { .quick-links { grid-template-columns: 1fr 1fr; } }
+  </style>
+</head>
+<body>
+
+  <!-- Navigation -->
+  <nav class="navbar">
+    <a class="navbar-brand" href="/dashboard">
+      <svg viewBox="0 0 32 32" fill="none"><ellipse cx="16" cy="16" rx="16" ry="16" fill="#e8f5ea"/><path d="M16 26c0 0-8-5-8-11a8 8 0 0 1 16 0c0 6-8 11-8 11z" fill="#38a745"/><path d="M16 26V14" stroke="#1e4d24" stroke-width="1.5" stroke-linecap="round"/></svg>
+      PLUTO
+    </a>
+    <ul class="navbar-nav">
+      <li><a href="/dashboard" class="active">Home</a></li>
+      <li><a href="/emissions/log">Emission Log</a></li>
+      <li><a href="/dashboard/tips">Tips</a></li>
+    </ul>
+    <div class="navbar-right">
+      <span class="nav-user">Account: <strong id="navUsername">…</strong></span>
+      <a href="/auth/logout" class="btn-logout">Logout</a>
+    </div>
+  </nav>
+
+  <div class="page-wrapper">
+
+    <!-- Welcome Banner -->
+    <div class="welcome-banner">
+      <div>
+        <h2>Welcome back, <span id="displayName">…</span></h2>
+        <p>Track your carbon footprint and make smarter environmental choices.</p>
+      </div>
+      <div class="welcome-badge">
+        <svg width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor" style="vertical-align:-2px;margin-right:5px;"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 3s6-2 9 4c2 4 1 9-3 11 0 0 2-4 0-7-1-2-3-3-6-3V3z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 3C5 3 3 9 6 13"/></svg>
+        Eco Member
+      </div>
+    </div>
+
+    <!-- Stats Grid -->
+    <div class="stats-grid">
+      <div class="stat-card">
+        <div class="card-title">Total CO₂</div>
+        <div class="value" id="totalCo2">—</div>
+        <div class="label">kg logged overall</div>
+      </div>
+      <div class="stat-card">
+        <div class="card-title">Total Entries</div>
+        <div class="value" id="totalEntries">—</div>
+        <div class="label">activities recorded</div>
+      </div>
+      <div class="stat-card">
+        <div class="card-title">Last 7 Days</div>
+        <div class="value" id="last7">—</div>
+        <div class="label">kg CO₂</div>
+      </div>
+      <div class="stat-card">
+        <div class="card-title">This Month</div>
+        <div class="value" id="thisMonth">—</div>
+        <div class="label">kg CO₂</div>
+      </div>
+    </div>
+
+    <!-- Chart + Insights -->
+    <div class="grid-2">
+      <div class="card">
+        <div class="card-title">Monthly CO₂ Trend</div>
+        <div class="chart-container">
+          <canvas id="monthlyChart"></canvas>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-title">Insights</div>
+        <div id="insightsContent">
+          <div class="insight-row">
+            <span class="insight-label">Highest Category</span>
+            <span class="insight-value" id="highestCat">No data yet</span>
+          </div>
+          <div class="insight-row">
+            <span class="insight-label">Best Day</span>
+            <span class="insight-value" id="bestDay">No data yet</span>
+          </div>
+          <div class="insight-row">
+            <span class="insight-label">Daily Average</span>
+            <span class="insight-value" id="dailyAvg">—</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Profile Info -->
+    <div class="card" style="margin-top:1.25rem;">
+      <div class="card-title">Profile</div>
+      <div class="profile-meta">
+        <div class="profile-meta-row"><strong id="profileUsername">—</strong></div>
+        <div class="profile-meta-row" id="profileEmail">—</div>
+        <div class="profile-meta-row">Member since: <strong id="profileJoined">—</strong></div>
+        <div class="profile-meta-row">Membership: <strong>Free</strong> &nbsp;|&nbsp; Rank: <strong>Beginner</strong></div>
+      </div>
+    </div>
+
+    <!-- Quick Links -->
+    <div class="quick-links">
+      <a href="/emissions/log" class="quick-link">
+        <svg width="28" height="28" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
+        <span>Log Emissions</span>
+      </a>
+      <a href="/emissions/log" class="quick-link">
+        <svg width="28" height="28" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/></svg>
+        <span>View Stats</span>
+      </a>
+      <a href="/dashboard/tips" class="quick-link">
+        <svg width="28" height="28" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z"/></svg>
+        <span>Eco Tips</span>
+      </a>
+    </div>
+  </div>
+
+  <!-- Chart.js CDN -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.0/chart.umd.min.js"></script>
+  <script>
+    let chart;
+
+    async function loadDashboard() {
+      const res = await fetch('/dashboard/api/stats').then(r => r.json());
+      if (!res.success) return;
+
+      const { user, stats } = res;
+
+      // Nav & welcome
+      document.getElementById('navUsername').textContent     = user.username;
+      document.getElementById('displayName').textContent     = user.username;
+      document.getElementById('profileUsername').textContent = user.username;
+      document.getElementById('profileEmail').textContent    = user.email;
+      document.getElementById('profileJoined').textContent   = new Date(user.joinedAt).toLocaleDateString('en-GB', { day:'numeric', month:'short', year:'numeric' });
+
+      // Stats
+      document.getElementById('totalCo2').textContent    = stats.totalCo2 + ' kg';
+      document.getElementById('totalEntries').textContent = stats.totalEntries;
+      document.getElementById('last7').textContent        = stats.last7Co2 + ' kg';
+      document.getElementById('thisMonth').textContent    = stats.thisMonthCo2 + ' kg';
+
+      // Insights
+      document.getElementById('highestCat').textContent = stats.highestCategory
+        ? `${stats.highestCategory.name} (${stats.highestCategory.co2} kg)` : 'No data yet';
+      document.getElementById('bestDay').textContent = stats.bestDay
+        ? `${stats.bestDay.date} — ${stats.bestDay.co2} kg` : 'No data yet';
+
+      const avgDays = Object.keys(stats.monthlyData).length || 1;
+      document.getElementById('dailyAvg').textContent = (stats.totalCo2 / (avgDays * 30)).toFixed(2) + ' kg/day';
+
+      // Chart
+      const labels = Object.keys(stats.monthlyData).map(k => {
+        const [y, m] = k.split('-');
+        return new Date(y, m - 1).toLocaleDateString('en-GB', { month:'short', year:'2-digit' });
+      });
+      const data = Object.values(stats.monthlyData).map(v => parseFloat(v.toFixed(2)));
+
+      if (chart) chart.destroy();
+      chart = new Chart(document.getElementById('monthlyChart'), {
+        type: 'bar',
+        data: {
+          labels,
+          datasets: [{
+            label: 'CO₂ (kg)',
+            data,
+            backgroundColor: 'rgba(56,167,69,0.7)',
+            borderColor: '#2d8c39',
+            borderWidth: 1,
+            borderRadius: 6,
+          }],
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: { legend: { display: false } },
+          scales: {
+            y: { beginAtZero: true, grid: { color: '#e8f5ea' }, ticks: { font: { size: 11 } } },
+            x: { grid: { display: false },                      ticks: { font: { size: 11 } } },
+          },
+        },
+      });
+    }
+
+    loadDashboard();
+  </script>
+</body>
+</html>
